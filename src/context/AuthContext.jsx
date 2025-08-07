@@ -2,9 +2,12 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { 
   onAuthStateChanged,
-  signOut as firebaseSignOut 
+  signOut as firebaseSignOut,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  sendPasswordResetEmail
 } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../services/firebaseConfig';
 
 const AuthContext = createContext({});
@@ -35,6 +38,38 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Registrar usuario
+  const register = async (email, password, additionalData = {}) => {
+    try {
+      const { user: firebaseUser } = await createUserWithEmailAndPassword(auth, email, password);
+      
+      // Guardar datos adicionales en Firestore
+      await setDoc(doc(db, 'users', firebaseUser.uid), {
+        uid: firebaseUser.uid,
+        email: firebaseUser.email,
+        createdAt: new Date(),
+        isActive: true,
+        ...additionalData
+      });
+
+      return firebaseUser;
+    } catch (error) {
+      console.error('Error al registrar usuario:', error);
+      throw error;
+    }
+  };
+
+  // Iniciar sesión
+  const login = async (email, password) => {
+    try {
+      const result = await signInWithEmailAndPassword(auth, email, password);
+      return result;
+    } catch (error) {
+      console.error('Error al iniciar sesión:', error);
+      throw error;
+    }
+  };
+
   // Cerrar sesión
   const signOut = async () => {
     try {
@@ -42,6 +77,16 @@ export const AuthProvider = ({ children }) => {
       setUser(null);
     } catch (error) {
       console.error('Error al cerrar sesión:', error);
+      throw error;
+    }
+  };
+
+  // Resetear contraseña
+  const resetPassword = async (email) => {
+    try {
+      await sendPasswordResetEmail(auth, email);
+    } catch (error) {
+      console.error('Error al enviar email de recuperación:', error);
       throw error;
     }
   };
@@ -73,7 +118,11 @@ export const AuthProvider = ({ children }) => {
   const value = {
     user,
     loading,
-    signOut
+    register,
+    login,
+    signOut,
+    resetPassword,
+    getUserData
   };
 
   return (
