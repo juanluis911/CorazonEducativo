@@ -1,0 +1,12 @@
+// src/components/Common/MobileList.jsx
+export const MobileList = ({ items, renderItem, className = "" }) => {
+  return (
+    <div className={`mobile-list bg-white dark:bg-gray-800 rounded-lg ${className}`}>
+      {items.map((item, index) => (
+        <div key={item.id || index} className="list-item">
+          {renderItem(item, index)}
+        </div>
+      ))}
+    </div>
+  );
+};
