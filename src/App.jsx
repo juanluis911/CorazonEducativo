@@ -3,6 +3,10 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 
+// Layout Components
+import AppLayout from './components/Layout/AppLayout';
+import LoadingSpinner from './components/Common/LoadingSpinner';
+
 // Páginas
 import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
@@ -11,6 +15,10 @@ import Tasks from './pages/Tasks';
 import Calendar from './pages/Calendar';
 import AdminPanel from './pages/AdminPanel';
 import Profile from './pages/Profile';
+import Subjects from './pages/Subjects';
+import Announcements from './pages/Announcements';
+import Notifications from './pages/Notifications';
+import Settings from './pages/Settings';
 
 // Importar estilos globales
 import './styles/globals.css';
@@ -20,11 +28,7 @@ const ProtectedRoute = ({ children, adminOnly = false }) => {
   const { user, loading } = useAuth();
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-indigo-500"></div>
-      </div>
-    );
+    return <LoadingSpinner />;
   }
 
   if (!user) {
@@ -35,7 +39,11 @@ const ProtectedRoute = ({ children, adminOnly = false }) => {
     return <Navigate to="/dashboard" replace />;
   }
 
-  return children;
+  return (
+    <AppLayout>
+      {children}
+    </AppLayout>
+  );
 };
 
 // Componente para rutas públicas (solo sin autenticación)
@@ -43,17 +51,14 @@ const PublicRoute = ({ children }) => {
   const { user, loading } = useAuth();
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-indigo-500"></div>
-      </div>
-    );
+    return <LoadingSpinner />;
   }
 
   if (user) {
     return <Navigate to="/dashboard" replace />;
   }
 
+  // Las páginas públicas no usan el AppLayout
   return children;
 };
 
@@ -61,7 +66,7 @@ const PublicRoute = ({ children }) => {
 const AppRoutes = () => {
   return (
     <Routes>
-      {/* Rutas públicas */}
+      {/* Rutas públicas - sin layout */}
       <Route 
         path="/login" 
         element={
@@ -80,7 +85,7 @@ const AppRoutes = () => {
         } 
       />
 
-      {/* Rutas protegidas */}
+      {/* Rutas protegidas - con layout responsivo */}
       <Route 
         path="/dashboard" 
         element={
@@ -107,12 +112,48 @@ const AppRoutes = () => {
           </ProtectedRoute>
         } 
       />
+
+      <Route 
+        path="/subjects" 
+        element={
+          <ProtectedRoute>
+            <Subjects />
+          </ProtectedRoute>
+        } 
+      />
+
+      <Route 
+        path="/announcements" 
+        element={
+          <ProtectedRoute>
+            <Announcements />
+          </ProtectedRoute>
+        } 
+      />
+
+      <Route 
+        path="/notifications" 
+        element={
+          <ProtectedRoute>
+            <Notifications />
+          </ProtectedRoute>
+        } 
+      />
       
       <Route 
         path="/profile" 
         element={
           <ProtectedRoute>
             <Profile />
+          </ProtectedRoute>
+        } 
+      />
+
+      <Route 
+        path="/settings" 
+        element={
+          <ProtectedRoute>
+            <Settings />
           </ProtectedRoute>
         } 
       />
@@ -139,7 +180,7 @@ function App() {
   return (
     <AuthProvider>
       <Router>
-        <div className="App min-h-screen bg-gray-50">
+        <div className="App">
           <AppRoutes />
         </div>
       </Router>

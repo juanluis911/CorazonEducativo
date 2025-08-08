@@ -1,5 +1,5 @@
 // src/components/Common/Sidebar.jsx
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
   Home, 
@@ -10,13 +10,41 @@ import {
   Settings,
   Shield,
   BookOpen,
-  Bell
+  Bell,
+  X
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 
 const Sidebar = ({ isOpen = true, onClose }) => {
   const location = useLocation();
   const { user } = useAuth();
+
+  // Cerrar sidebar cuando cambie la ruta en móvil
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 1024 && onClose) {
+        // En desktop, no cerrar automáticamente
+        return;
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [onClose]);
+
+  // Cerrar sidebar al hacer clic en overlay
+  const handleOverlayClick = (e) => {
+    if (e.target === e.currentTarget && onClose) {
+      onClose();
+    }
+  };
+
+  // Cerrar sidebar al hacer clic en un enlace (solo en móvil)
+  const handleLinkClick = () => {
+    if (window.innerWidth < 1024 && onClose) {
+      onClose();
+    }
+  };
 
   // Elementos del menú según el rol del usuario
   const getMenuItems = () => {
@@ -92,15 +120,18 @@ const Sidebar = ({ isOpen = true, onClose }) => {
     return location.pathname === href;
   };
 
+  if (!isOpen) {
+    return null;
+  }
+
   return (
     <>
       {/* Overlay para móvil */}
-      {isOpen && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
-          onClick={onClose}
-        />
-      )}
+      <div 
+        className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+        onClick={handleOverlayClick}
+        aria-hidden="true"
+      />
       
       {/* Sidebar */}
       <div className={`
@@ -119,11 +150,10 @@ const Sidebar = ({ isOpen = true, onClose }) => {
           {/* Botón cerrar en móvil */}
           <button
             onClick={onClose}
-            className="lg:hidden p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700"
+            className="lg:hidden p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            aria-label="Cerrar menú"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            <X className="w-6 h-6" />
           </button>
         </div>
 
@@ -162,7 +192,7 @@ const Sidebar = ({ isOpen = true, onClose }) => {
               <Link
                 key={item.href}
                 to={item.href}
-                onClick={onClose}
+                onClick={handleLinkClick}
                 className={`
                   flex items-center px-3 py-2 text-sm font-medium rounded-md
                   transition-colors duration-200
@@ -184,9 +214,9 @@ const Sidebar = ({ isOpen = true, onClose }) => {
 
         {/* Footer del sidebar */}
         <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-          <div className="text-xs text-gray-500 dark:text-gray-400 text-center">
+          <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
             Agenda Escolar v1.0.0
-          </div>
+          </p>
         </div>
       </div>
     </>

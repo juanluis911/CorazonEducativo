@@ -1,31 +1,74 @@
 // src/components/Common/MobileLayout.jsx
 import React, { useState, useEffect } from 'react';
-import { Menu, X, Bell, User } from 'lucide-react';
+import { Menu, Bell, User, X } from 'lucide-react';
+import Sidebar from './Sidebar';
 
-const MobileLayout = ({ children, title = "Agenda Escolar", showNotifications = true }) => {
+const MobileLayout = ({ 
+  children, 
+  title = "Agenda Escolar",
+  showNotifications = true,
+  className = ""
+}) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
 
+  // Manejar scroll para efecto de header
   useEffect(() => {
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 10);
+      setIsScrolled(window.scrollY > 0);
     };
 
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Cerrar sidebar cuando cambie el tamaño de pantalla
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 1024) {
+        setSidebarOpen(false);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Prevenir scroll del body cuando el sidebar está abierto
+  useEffect(() => {
+    if (sidebarOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+
+    // Cleanup
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [sidebarOpen]);
+
+  const closeSidebar = () => {
+    setSidebarOpen(false);
+  };
+
+  const openSidebar = () => {
+    setSidebarOpen(true);
+  };
+
   return (
-    <div className="mobile-layout">
-      {/* Header */}
-      <header className={`mobile-header transition-all duration-200 ${
-        isScrolled ? 'shadow-md' : 'shadow-sm'
-      }`}>
+    <div className={`min-h-screen bg-gray-50 dark:bg-gray-900 ${className}`}>
+      {/* Header móvil */}
+      <header className={`
+        lg:hidden sticky top-0 z-30 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700
+        ${isScrolled ? 'shadow-md' : 'shadow-sm'}
+        transition-shadow duration-200
+      `}>
         <div className="flex items-center justify-between h-16 px-4">
           {/* Botón menú */}
           <button
-            onClick={() => setSidebarOpen(true)}
-            className="mobile-btn btn-ghost p-2"
+            onClick={openSidebar}
+            className="mobile-btn btn-ghost p-2 rounded-md text-gray-500 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
             aria-label="Abrir menú"
           >
             <Menu className="w-6 h-6" />
@@ -40,7 +83,7 @@ const MobileLayout = ({ children, title = "Agenda Escolar", showNotifications = 
           <div className="flex items-center space-x-2">
             {showNotifications && (
               <button
-                className="mobile-btn btn-ghost p-2 relative"
+                className="mobile-btn btn-ghost p-2 rounded-md text-gray-500 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 relative transition-colors"
                 aria-label="Notificaciones"
               >
                 <Bell className="w-6 h-6" />
@@ -49,7 +92,7 @@ const MobileLayout = ({ children, title = "Agenda Escolar", showNotifications = 
             )}
             
             <button
-              className="mobile-btn btn-ghost p-2"
+              className="mobile-btn btn-ghost p-2 rounded-md text-gray-500 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
               aria-label="Perfil de usuario"
             >
               <User className="w-6 h-6" />
@@ -58,44 +101,50 @@ const MobileLayout = ({ children, title = "Agenda Escolar", showNotifications = 
         </div>
       </header>
 
-      {/* Sidebar */}
-      {sidebarOpen && (
-        <>
-          {/* Overlay */}
-          <div 
-            className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
-            onClick={() => setSidebarOpen(false)}
-          />
-          
-          {/* Sidebar content */}
-          <div className="sidebar open z-50">
-            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Menú
-              </h2>
-              <button
-                onClick={() => setSidebarOpen(false)}
-                className="mobile-btn btn-ghost p-2"
-                aria-label="Cerrar menú"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            
-            <nav className="flex-1 p-4">
-              {/* Aquí van los elementos del menú */}
-              <SidebarContent onItemClick={() => setSidebarOpen(false)} />
-            </nav>
+      {/* Layout principal */}
+      <div className="lg:flex">
+        {/* Sidebar - Desktop */}
+        <div className="hidden lg:flex lg:flex-shrink-0">
+          <div className="flex flex-col w-64">
+            <Sidebar isOpen={true} onClose={closeSidebar} />
           </div>
-        </>
-      )}
-
-      {/* Contenido principal */}
-      <main className="mobile-main overflow-y-auto">
-        <div className="container mx-auto px-4 py-6">
-          {children}
         </div>
-      </main>
+
+        {/* Sidebar - Mobile */}
+        {sidebarOpen && (
+          <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
+        )}
+
+        {/* Contenido principal */}
+        <main className="flex-1 lg:overflow-hidden">
+          <div className="h-full lg:flex lg:flex-col">
+            {/* Header desktop (opcional) */}
+            <div className="hidden lg:block bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+              <div className="px-6 py-4">
+                <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
+                  {title}
+                </h1>
+              </div>
+            </div>
+
+            {/* Contenido */}
+            <div className="flex-1 overflow-y-auto">
+              <div className="container mx-auto px-4 py-6 lg:px-6">
+                {children}
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
     </div>
   );
 };
+
+// Componente para el contenido del sidebar (si necesitas reutilizarlo)
+export const SidebarContent = ({ onItemClick }) => {
+  // Este componente puede contener los elementos del menú
+  // si quieres separar la lógica del contenido
+  return null; // Implementar según necesidad
+};
+
+export default MobileLayout;
