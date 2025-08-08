@@ -1,93 +1,101 @@
 // src/components/Common/Header.jsx
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../../hooks/useAuth';
+import { Menu, X, Bell, Search } from 'lucide-react';
 import UserMenu from '../UserMenu/UserMenu';
-import { Bell, Menu, Search } from 'lucide-react';
+import { useAuth } from '../../hooks/useAuth';
 
-const Header = () => {
-  const { user } = useAuth();
-  const [searchQuery, setSearchQuery] = useState('');
+const Header = ({ onMenuToggle }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const { user } = useAuth();
 
-  const handleSearch = (e) => {
-    e.preventDefault();
-    // Implementar lógica de búsqueda
-    console.log('Buscar:', searchQuery);
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+    if (onMenuToggle) {
+      onMenuToggle(!isMobileMenuOpen);
+    }
   };
 
   return (
-    <header className="bg-white shadow-sm border-b">
+    <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          {/* Logo y navegación */}
+        <div className="flex items-center justify-between h-16">
+          {/* Lado izquierdo - Logo y menú móvil */}
           <div className="flex items-center">
             {/* Botón menú móvil */}
             <button
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="lg:hidden p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100"
+              onClick={toggleMobileMenu}
+              className="lg:hidden p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500"
             >
-              <Menu size={20} />
+              {isMobileMenuOpen ? (
+                <X className="w-6 h-6" />
+              ) : (
+                <Menu className="w-6 h-6" />
+              )}
             </button>
 
             {/* Logo */}
             <Link to="/dashboard" className="flex items-center ml-4 lg:ml-0">
-              <div className="flex-shrink-0">
-                <h1 className="text-xl font-bold text-indigo-600">
+              <div className="flex items-center">
+                <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
+                  <span className="text-white font-bold text-lg">A</span>
+                </div>
+                <span className="ml-2 text-xl font-semibold text-gray-900 hidden sm:block">
                   Agenda Escolar
-                </h1>
+                </span>
               </div>
             </Link>
-
-            {/* Navegación desktop */}
-            <nav className="hidden lg:ml-8 lg:flex lg:space-x-8">
-              <Link
-                to="/dashboard"
-                className="text-gray-900 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium transition-colors"
-              >
-                Dashboard
-              </Link>
-              <Link
-                to="/calendar"
-                className="text-gray-500 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium transition-colors"
-              >
-                Calendario
-              </Link>
-              <Link
-                to="/tasks"
-                className="text-gray-500 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium transition-colors"
-              >
-                Tareas
-              </Link>
-              {user?.role === 'admin' && (
-                <Link
-                  to="/admin"
-                  className="text-gray-500 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium transition-colors"
-                >
-                  Administración
-                </Link>
-              )}
-            </nav>
           </div>
 
-          {/* Barra de búsqueda */}
-          <div className="flex-1 max-w-lg mx-8 hidden md:block">
-            <form onSubmit={handleSearch} className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Search className="h-4 w-4 text-gray-400" />
-              </div>
-              <input
-                type="text"
-                placeholder="Buscar tareas, eventos..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-              />
-            </form>
-          </div>
+          {/* Centro - Navegación (solo desktop) */}
+          <nav className="hidden lg:flex space-x-8">
+            <Link
+              to="/dashboard"
+              className="text-gray-900 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200"
+            >
+              Dashboard
+            </Link>
+            <Link
+              to="/calendar"
+              className="text-gray-500 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200"
+            >
+              Calendario
+            </Link>
+            <Link
+              to="/tasks"
+              className="text-gray-500 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200"
+            >
+              Tareas
+            </Link>
+            {user?.role === 'admin' && (
+              <Link
+                to="/admin"
+                className="text-gray-500 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200"
+              >
+                Administración
+              </Link>
+            )}
+          </nav>
 
-          {/* Acciones del usuario */}
+          {/* Lado derecho - Búsqueda, notificaciones y usuario */}
           <div className="flex items-center space-x-4">
+            {/* Búsqueda (oculta en móvil) */}
+            <div className="hidden md:block">
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Search className="h-4 w-4 text-gray-400" />
+                </div>
+                <input
+                  type="text"
+                  placeholder="Buscar..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                />
+              </div>
+            </div>
+
             {/* Notificaciones */}
             <button className="p-2 text-gray-400 hover:text-gray-500 relative">
               <Bell size={20} />

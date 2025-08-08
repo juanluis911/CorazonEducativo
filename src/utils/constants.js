@@ -2,9 +2,9 @@
 
 // Roles de usuario
 export const USER_ROLES = {
-  ADMIN: 'admin',
+  STUDENT: 'student',
   TEACHER: 'teacher',
-  STUDENT: 'student'
+  ADMIN: 'admin'
 };
 
 // Estados de tareas
@@ -16,93 +16,44 @@ export const TASK_STATUS = {
 };
 
 // Prioridades de tareas
-export const TASK_PRIORITIES = {
+export const TASK_PRIORITY = {
   LOW: 'low',
   MEDIUM: 'medium',
   HIGH: 'high',
   URGENT: 'urgent'
 };
 
-// Tipos de eventos del calendario
+// Tipos de eventos
 export const EVENT_TYPES = {
   EXAM: 'exam',
   ASSIGNMENT: 'assignment',
   CLASS: 'class',
   MEETING: 'meeting',
-  HOLIDAY: 'holiday',
-  REMINDER: 'reminder'
+  HOLIDAY: 'holiday'
 };
 
 // Tipos de notificaciones
 export const NOTIFICATION_TYPES = {
   TASK_DUE: 'task_due',
-  TASK_ASSIGNED: 'task_assigned',
   ANNOUNCEMENT: 'announcement',
-  GRADE_POSTED: 'grade_posted',
   EVENT_REMINDER: 'event_reminder',
   SYSTEM: 'system'
 };
 
-// Estados de notificaciones
-export const NOTIFICATION_STATUS = {
-  UNREAD: 'unread',
-  READ: 'read',
-  ARCHIVED: 'archived'
-};
-
-// Materias/Asignaturas predefinidas
-export const SUBJECTS = [
-  'Matemáticas',
-  'Lengua y Literatura',
-  'Ciencias Naturales',
-  'Historia',
-  'Geografía',
-  'Educación Física',
-  'Arte',
-  'Música',
-  'Tecnología',
-  'Inglés',
-  'Química',
-  'Física',
-  'Biología',
-  'Filosofía',
-  'Economía',
-  'Informática'
-];
-
 // Colores para materias
 export const SUBJECT_COLORS = {
   'Matemáticas': '#3B82F6',
-  'Lengua y Literatura': '#10B981',
-  'Ciencias Naturales': '#8B5CF6',
+  'Ciencias': '#10B981',
   'Historia': '#F59E0B',
-  'Geografía': '#06B6D4',
-  'Educación Física': '#EF4444',
-  'Arte': '#EC4899',
-  'Música': '#84CC16',
-  'Tecnología': '#6B7280',
-  'Inglés': '#F97316',
-  'Química': '#14B8A6',
-  'Física': '#3730A3',
-  'Biología': '#059669',
-  'Filosofía': '#7C3AED',
-  'Economía': '#DC2626',
-  'Informática': '#1F2937'
-};
-
-// Configuración de paginación
-export const PAGINATION = {
-  DEFAULT_PAGE_SIZE: 10,
-  MAX_PAGE_SIZE: 100
-};
-
-// Configuración de fechas
-export const DATE_FORMATS = {
-  DISPLAY: 'dd/MM/yyyy',
-  INPUT: 'yyyy-MM-dd',
-  TIME: 'HH:mm',
-  DATETIME: 'dd/MM/yyyy HH:mm',
-  MONTH_YEAR: 'MMMM yyyy'
+  'Literatura': '#8B5CF6',
+  'Inglés': '#EF4444',
+  'Educación Física': '#06B6D4',
+  'Arte': '#F97316',
+  'Música': '#EC4899',
+  'Geografía': '#84CC16',
+  'Química': '#6366F1',
+  'Física': '#14B8A6',
+  'Biología': '#22C55E'
 };
 
 // Configuración de archivos

@@ -1,128 +1,174 @@
 // src/context/AuthContext.jsx
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useReducer } from 'react';
 import { 
-  onAuthStateChanged,
-  signOut as firebaseSignOut,
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  sendPasswordResetEmail
+  onAuthStateChanged, 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword, 
+  signOut, 
+  sendPasswordResetEmail,
+  updateProfile
 } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../services/firebaseConfig';
 
-const AuthContext = createContext({});
-
-export const useAuthContext = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuthContext debe ser usado dentro de AuthProvider');
-  }
-  return context;
+// Estados del contexto
+const initialState = {
+  user: null,
+  loading: true,
+  error: null
 };
 
+// Reducer para manejar las acciones
+const authReducer = (state, action) => {
+  switch (action.type) {
+    case 'SET_LOADING':
+      return { ...state, loading: action.payload };
+    case 'SET_USER':
+      return { ...state, user: action.payload, loading: false };
+    case 'SET_ERROR':
+      return { ...state, error: action.payload, loading: false };
+    case 'CLEAR_ERROR':
+      return { ...state, error: null };
+    default:
+      return state;
+  }
+};
+
+// Crear el contexto
+export const AuthContext = createContext();
+
+// Provider del contexto
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [state, dispatch] = useReducer(authReducer, initialState);
 
-  // Obtener datos adicionales del usuario desde Firestore
-  const getUserData = async (uid) => {
+  // Función para obtener datos adicionales del usuario desde Firestore
+  const getUserData = async (user) => {
     try {
-      const userDoc = await getDoc(doc(db, 'users', uid));
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
       if (userDoc.exists()) {
-        return userDoc.data();
+        return { ...user, ...userDoc.data() };
       }
-      return null;
+      return user;
     } catch (error) {
-      console.error('Error al obtener datos del usuario:', error);
-      return null;
+      console.error('Error obteniendo datos del usuario:', error);
+      return user;
     }
   };
 
-  // Registrar usuario
-  const register = async (email, password, additionalData = {}) => {
-    try {
-      const { user: firebaseUser } = await createUserWithEmailAndPassword(auth, email, password);
-      
-      // Guardar datos adicionales en Firestore
-      await setDoc(doc(db, 'users', firebaseUser.uid), {
-        uid: firebaseUser.uid,
-        email: firebaseUser.email,
-        createdAt: new Date(),
-        isActive: true,
-        ...additionalData
-      });
-
-      return firebaseUser;
-    } catch (error) {
-      console.error('Error al registrar usuario:', error);
-      throw error;
-    }
-  };
-
-  // Iniciar sesión
-  const login = async (email, password) => {
-    try {
-      const result = await signInWithEmailAndPassword(auth, email, password);
-      return result;
-    } catch (error) {
-      console.error('Error al iniciar sesión:', error);
-      throw error;
-    }
-  };
-
-  // Cerrar sesión
-  const signOut = async () => {
-    try {
-      await firebaseSignOut(auth);
-      setUser(null);
-    } catch (error) {
-      console.error('Error al cerrar sesión:', error);
-      throw error;
-    }
-  };
-
-  // Resetear contraseña
-  const resetPassword = async (email) => {
-    try {
-      await sendPasswordResetEmail(auth, email);
-    } catch (error) {
-      console.error('Error al enviar email de recuperación:', error);
-      throw error;
-    }
-  };
-
-  // Escuchar cambios en la autenticación
+  // Escuchar cambios en el estado de autenticación
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (firebaseUser) {
-        // Usuario autenticado, obtener datos adicionales
-        const userData = await getUserData(firebaseUser.uid);
-        setUser({
-          uid: firebaseUser.uid,
-          email: firebaseUser.email,
-          displayName: firebaseUser.displayName,
-          photoURL: firebaseUser.photoURL,
-          emailVerified: firebaseUser.emailVerified,
-          ...userData // Datos adicionales desde Firestore
-        });
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        // Usuario autenticado
+        const userData = await getUserData(user);
+        dispatch({ type: 'SET_USER', payload: userData });
       } else {
         // Usuario no autenticado
-        setUser(null);
+        dispatch({ type: 'SET_USER', payload: null });
       }
-      setLoading(false);
     });
 
     return () => unsubscribe();
   }, []);
 
+  // Función para iniciar sesión
+  const login = async (email, password) => {
+    try {
+      dispatch({ type: 'SET_LOADING', payload: true });
+      dispatch({ type: 'CLEAR_ERROR' });
+      
+      const result = await signInWithEmailAndPassword(auth, email, password);
+      const userData = await getUserData(result.user);
+      
+      dispatch({ type: 'SET_USER', payload: userData });
+      return { success: true, user: userData };
+    } catch (error) {
+      dispatch({ type: 'SET_ERROR', payload: error.message });
+      dispatch({ type: 'SET_LOADING', payload: false });
+      return { success: false, error: error.message };
+    }
+  };
+
+  // Función para registrarse
+  const register = async (email, password, userData) => {
+    try {
+      dispatch({ type: 'SET_LOADING', payload: true });
+      dispatch({ type: 'CLEAR_ERROR' });
+
+      // Crear usuario en Firebase Auth
+      const result = await createUserWithEmailAndPassword(auth, email, password);
+      
+      // Actualizar perfil con nombre
+      if (userData.firstName) {
+        await updateProfile(result.user, {
+          displayName: `${userData.firstName} ${userData.lastName || ''}`
+        });
+      }
+
+      // Guardar datos adicionales en Firestore
+      const userDocData = {
+        uid: result.user.uid,
+        email: result.user.email,
+        firstName: userData.firstName || '',
+        lastName: userData.lastName || '',
+        role: userData.role || 'student',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        isActive: true
+      };
+
+      await setDoc(doc(db, 'users', result.user.uid), userDocData);
+
+      const fullUserData = { ...result.user, ...userDocData };
+      dispatch({ type: 'SET_USER', payload: fullUserData });
+      
+      return { success: true, user: fullUserData };
+    } catch (error) {
+      dispatch({ type: 'SET_ERROR', payload: error.message });
+      dispatch({ type: 'SET_LOADING', payload: false });
+      return { success: false, error: error.message };
+    }
+  };
+
+  // Función para cerrar sesión
+  const logout = async () => {
+    try {
+      await signOut(auth);
+      dispatch({ type: 'SET_USER', payload: null });
+      return { success: true };
+    } catch (error) {
+      dispatch({ type: 'SET_ERROR', payload: error.message });
+      return { success: false, error: error.message };
+    }
+  };
+
+  // Función para restablecer contraseña
+  const resetPassword = async (email) => {
+    try {
+      dispatch({ type: 'CLEAR_ERROR' });
+      await sendPasswordResetEmail(auth, email);
+      return { success: true };
+    } catch (error) {
+      dispatch({ type: 'SET_ERROR', payload: error.message });
+      return { success: false, error: error.message };
+    }
+  };
+
+  // Función para limpiar errores
+  const clearError = () => {
+    dispatch({ type: 'CLEAR_ERROR' });
+  };
+
+  // Valores del contexto
   const value = {
-    user,
-    loading,
-    register,
+    user: state.user,
+    loading: state.loading,
+    error: state.error,
     login,
-    signOut,
+    register,
+    logout,
     resetPassword,
-    getUserData
+    clearError
   };
 
   return (
@@ -130,4 +176,13 @@ export const AuthProvider = ({ children }) => {
       {children}
     </AuthContext.Provider>
   );
+};
+
+// Hook personalizado para usar el contexto
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth debe ser usado dentro de un AuthProvider');
+  }
+  return context;
 };

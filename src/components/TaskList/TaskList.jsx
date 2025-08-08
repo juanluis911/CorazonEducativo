@@ -1,63 +1,93 @@
 // src/components/TaskList/TaskList.jsx
 import React from 'react';
-import { CheckSquare, Square, Clock } from 'lucide-react';
+import { CheckCircle, Clock, AlertCircle } from 'lucide-react';
 
 const TaskList = () => {
-  // Datos de ejemplo - en tu app real, esto vendrá de Firebase
+  // Datos de ejemplo - en una app real vendrían de un hook o contexto
   const tasks = [
     {
       id: 1,
-      title: 'Entregar ensayo de Historia',
-      subject: 'Historia',
-      dueDate: new Date('2024-12-20'),
-      completed: false,
-      priority: 'high'
+      title: "Ensayo de Historia",
+      subject: "Historia",
+      dueDate: "2024-08-10",
+      priority: "high",
+      completed: false
     },
     {
       id: 2,
-      title: 'Resolver ejercicios de Matemáticas',
-      subject: 'Matemáticas',
-      dueDate: new Date('2024-12-18'),
-      completed: true,
-      priority: 'medium'
+      title: "Ejercicios de Matemáticas",
+      subject: "Matemáticas",
+      dueDate: "2024-08-08",
+      priority: "medium",
+      completed: true
+    },
+    {
+      id: 3,
+      title: "Lectura Capítulo 5",
+      subject: "Literatura",
+      dueDate: "2024-08-12",
+      priority: "low",
+      completed: false
     }
   ];
 
-  const priorityColors = {
-    low: 'border-l-green-500',
-    medium: 'border-l-yellow-500',
-    high: 'border-l-red-500'
+  const getPriorityIcon = (priority) => {
+    switch (priority) {
+      case 'high':
+        return <AlertCircle className="w-4 h-4 text-red-500" />;
+      case 'medium':
+        return <Clock className="w-4 h-4 text-yellow-500" />;
+      default:
+        return <Clock className="w-4 h-4 text-gray-400" />;
+    }
+  };
+
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString('es-ES', {
+      day: 'numeric',
+      month: 'short'
+    });
   };
 
   return (
     <div className="space-y-3">
       {tasks.length === 0 ? (
-        <p className="text-gray-500 text-center py-4">No tienes tareas pendientes</p>
+        <p className="text-gray-500 text-center py-4">No hay tareas pendientes</p>
       ) : (
-        tasks.map((task) => (
+        tasks.map(task => (
           <div
             key={task.id}
-            className={`border-l-4 ${priorityColors[task.priority]} bg-gray-50 p-4 rounded-r-lg`}
+            className={`p-3 rounded-lg border transition-all duration-200 ${
+              task.completed 
+                ? 'bg-gray-50 border-gray-200 opacity-75' 
+                : 'bg-white border-gray-200 hover:border-indigo-300'
+            }`}
           >
-            <div className="flex items-start justify-between">
-              <div className="flex items-start space-x-3">
-                <button className="mt-1">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <button className="flex-shrink-0">
                   {task.completed ? (
-                    <CheckSquare className="w-5 h-5 text-green-600" />
+                    <CheckCircle className="w-5 h-5 text-green-500" />
                   ) : (
-                    <Square className="w-5 h-5 text-gray-400" />
+                    <div className="w-5 h-5 border-2 border-gray-300 rounded-full"></div>
                   )}
                 </button>
+                
                 <div>
-                  <h4 className={`font-medium ${task.completed ? 'line-through text-gray-500' : 'text-gray-900'}`}>
+                  <h4 className={`font-medium ${
+                    task.completed ? 'text-gray-500 line-through' : 'text-gray-900'
+                  }`}>
                     {task.title}
                   </h4>
-                  <p className="text-sm text-gray-600">{task.subject}</p>
-                  <div className="flex items-center mt-2 text-sm text-gray-500">
-                    <Clock className="w-4 h-4 mr-1" />
-                    {task.dueDate.toLocaleDateString('es-ES')}
-                  </div>
+                  <p className="text-sm text-gray-500">{task.subject}</p>
                 </div>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                {getPriorityIcon(task.priority)}
+                <span className="text-sm text-gray-500">
+                  {formatDate(task.dueDate)}
+                </span>
               </div>
             </div>
           </div>

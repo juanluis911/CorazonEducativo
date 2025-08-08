@@ -5,87 +5,98 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 const Calendar = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
 
+  const getDaysInMonth = (date) => {
+    return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+  };
+
+  const getFirstDayOfMonth = (date) => {
+    return new Date(date.getFullYear(), date.getMonth(), 1).getDay();
+  };
+
   const monthNames = [
-    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+    "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+    "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
   ];
 
-  const daysOfWeek = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+  const dayNames = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
 
-  const getDaysInMonth = (date) => {
-    const year = date.getFullYear();
-    const month = date.getMonth();
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-    const startDate = new Date(firstDay);
-    startDate.setDate(startDate.getDate() - firstDay.getDay());
+  const previousMonth = () => {
+    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
+  };
 
+  const nextMonth = () => {
+    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
+  };
+
+  const renderCalendarDays = () => {
+    const daysInMonth = getDaysInMonth(currentDate);
+    const firstDayOfMonth = getFirstDayOfMonth(currentDate);
+    const today = new Date();
     const days = [];
-    const endDate = new Date(lastDay);
-    endDate.setDate(endDate.getDate() + (6 - lastDay.getDay()));
 
-    for (let day = new Date(startDate); day <= endDate; day.setDate(day.getDate() + 1)) {
-      days.push(new Date(day));
+    // Días vacíos al inicio
+    for (let i = 0; i < firstDayOfMonth; i++) {
+      days.push(<div key={`empty-${i}`} className="p-2"></div>);
+    }
+
+    // Días del mes
+    for (let day = 1; day <= daysInMonth; day++) {
+      const isToday = today.getDate() === day && 
+                     today.getMonth() === currentDate.getMonth() && 
+                     today.getFullYear() === currentDate.getFullYear();
+
+      days.push(
+        <div
+          key={day}
+          className={`p-2 text-center cursor-pointer rounded-md transition-colors duration-200 ${
+            isToday 
+              ? 'bg-indigo-500 text-white' 
+              : 'hover:bg-gray-100 text-gray-700'
+          }`}
+        >
+          {day}
+        </div>
+      );
     }
 
     return days;
   };
 
-  const navigateMonth = (direction) => {
-    const newDate = new Date(currentDate);
-    newDate.setMonth(currentDate.getMonth() + direction);
-    setCurrentDate(newDate);
-  };
-
-  const days = getDaysInMonth(currentDate);
-  const today = new Date();
-
   return (
-    <div className="bg-white">
+    <div className="bg-white rounded-lg">
+      {/* Header del calendario */}
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold">
+        <button
+          onClick={previousMonth}
+          className="p-2 rounded-md hover:bg-gray-100 transition-colors duration-200"
+        >
+          <ChevronLeft className="w-5 h-5" />
+        </button>
+        
+        <h3 className="text-lg font-semibold text-gray-900">
           {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
         </h3>
-        <div className="flex space-x-2">
-          <button
-            onClick={() => navigateMonth(-1)}
-            className="p-2 hover:bg-gray-100 rounded"
-          >
-            <ChevronLeft size={16} />
-          </button>
-          <button
-            onClick={() => navigateMonth(1)}
-            className="p-2 hover:bg-gray-100 rounded"
-          >
-            <ChevronRight size={16} />
-          </button>
-        </div>
+        
+        <button
+          onClick={nextMonth}
+          className="p-2 rounded-md hover:bg-gray-100 transition-colors duration-200"
+        >
+          <ChevronRight className="w-5 h-5" />
+        </button>
       </div>
 
+      {/* Días de la semana */}
       <div className="grid grid-cols-7 gap-1 mb-2">
-        {daysOfWeek.map((day) => (
+        {dayNames.map(day => (
           <div key={day} className="p-2 text-center text-sm font-medium text-gray-500">
             {day}
           </div>
         ))}
       </div>
 
+      {/* Días del mes */}
       <div className="grid grid-cols-7 gap-1">
-        {days.map((day, index) => {
-          const isCurrentMonth = day.getMonth() === currentDate.getMonth();
-          const isToday = day.toDateString() === today.toDateString();
-          
-          return (
-            <div
-              key={index}
-              className={`p-2 text-center text-sm cursor-pointer hover:bg-gray-100 ${
-                isCurrentMonth ? 'text-gray-900' : 'text-gray-400'
-              } ${isToday ? 'bg-indigo-100 text-indigo-700 font-semibold' : ''}`}
-            >
-              {day.getDate()}
-            </div>
-          );
-        })}
+        {renderCalendarDays()}
       </div>
     </div>
   );
