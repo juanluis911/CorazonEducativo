@@ -12,11 +12,7 @@ import Calendar from './pages/Calendar';
 import AdminPanel from './pages/AdminPanel';
 import Profile from './pages/Profile';
 
-// Importar estilos globales si existen
-import './styles/globals.css';
-import Profile from './pages/Profile';
-
-// Importar estilos globales si existen
+// Importar estilos globales
 import './styles/globals.css';
 
 // Componente para rutas protegidas

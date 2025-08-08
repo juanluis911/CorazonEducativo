@@ -124,15 +124,10 @@ const StudentDashboard = () => {
             {/* Bienvenida */}
             <div className="mb-8">
               <h1 className="text-3xl font-bold text-gray-900">
-                ¡Bienvenido, {user?.firstName}!
+                ¡Bienvenido, {user?.firstName || 'Estudiante'}!
               </h1>
               <p className="text-gray-600 mt-2">
-                {new Date().toLocaleDateString('es-ES', { 
-                  weekday: 'long', 
-                  year: 'numeric', 
-                  month: 'long', 
-                  day: 'numeric' 
-                })}
+                Aquí tienes un resumen de tus actividades académicas
               </p>
             </div>
 
@@ -172,72 +167,126 @@ const StudentDashboard = () => {
                 <div className="flex items-center">
                   <AlertTriangle className="h-8 w-8 text-red-500" />
                   <div className="ml-3">
-                    <p className="text-sm font-medium text-gray-500">Vencidas</p>
+                    <p className="text-sm font-medium text-gray-500">Atrasadas</p>
                     <p className="text-2xl font-bold text-gray-900">{stats.overdueTasks}</p>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Contenido principal */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Tareas urgentes */}
-              <div className="lg:col-span-2">
-                <div className="bg-white rounded-lg shadow p-6">
-                  <h2 className="text-xl font-semibold mb-4 flex items-center">
-                    <AlertTriangle className="h-5 w-5 text-orange-500 mr-2" />
-                    Tareas Urgentes
-                  </h2>
-                  
-                  {urgentTasks.length > 0 ? (
+              {/* Contenido principal */}
+              <div className="lg:col-span-2 space-y-6">
+                {/* Tareas urgentes */}
+                {urgentTasks.length > 0 && (
+                  <div className="bg-white rounded-lg shadow p-6">
+                    <h2 className="text-lg font-semibold mb-4 flex items-center text-red-600">
+                      <AlertTriangle className="h-5 w-5 mr-2" />
+                      Tareas Urgentes (Próximas 24h)
+                    </h2>
+                    
                     <div className="space-y-3">
                       {urgentTasks.map(task => (
-                        <div key={task.id} className="border-l-4 border-orange-400 bg-orange-50 p-4 rounded">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <h3 className="font-medium text-gray-900">{task.title}</h3>
-                              <p className="text-sm text-gray-600">{task.subject}</p>
-                              <p className="text-xs text-orange-600 mt-1">
-                                Vence: {new Date(task.dueDate).toLocaleDateString('es-ES')}
-                              </p>
-                            </div>
-                            <button className="bg-orange-500 text-white px-3 py-1 rounded text-sm hover:bg-orange-600">
-                              Ver detalles
-                            </button>
+                        <div key={task.id} className="flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-200">
+                          <div>
+                            <h3 className="font-medium text-red-900">{task.title}</h3>
+                            <p className="text-sm text-red-600">{task.subject}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm font-medium text-red-900">
+                              {new Date(task.dueDate).toLocaleDateString('es-ES')}
+                            </p>
+                            <p className="text-xs text-red-600">
+                              {new Date(task.dueDate).toLocaleTimeString('es-ES', { 
+                                hour: '2-digit', 
+                                minute: '2-digit' 
+                              })}
+                            </p>
                           </div>
                         </div>
                       ))}
                     </div>
-                  ) : (
-                    <p className="text-gray-500 text-center py-8">
-                      ¡Excelente! No tienes tareas urgentes por el momento.
-                    </p>
-                  )}
+                  </div>
+                )}
+
+                {/* Lista de tareas */}
+                <div className="bg-white rounded-lg shadow p-6">
+                  <h2 className="text-lg font-semibold mb-4 flex items-center">
+                    <BookOpen className="h-5 w-5 text-blue-500 mr-2" />
+                    Mis Tareas
+                  </h2>
+                  
+                  <div className="space-y-3">
+                    {tasks.map(task => (
+                      <div key={task.id} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
+                        <div className="flex items-center">
+                          <div className={`w-3 h-3 rounded-full mr-3 ${
+                            task.status === 'completed' 
+                              ? 'bg-green-500' 
+                              : task.priority === 'high' 
+                                ? 'bg-red-500' 
+                                : task.priority === 'medium' 
+                                  ? 'bg-yellow-500' 
+                                  : 'bg-blue-500'
+                          }`}></div>
+                          <div>
+                            <h3 className={`font-medium ${
+                              task.status === 'completed' 
+                                ? 'text-gray-500 line-through' 
+                                : 'text-gray-900'
+                            }`}>
+                              {task.title}
+                            </h3>
+                            <p className="text-sm text-gray-600">{task.subject}</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-medium text-gray-900">
+                            {new Date(task.dueDate).toLocaleDateString('es-ES')}
+                          </p>
+                          <div className={`inline-block px-2 py-1 rounded-full text-xs ${
+                            task.status === 'completed' 
+                              ? 'bg-green-100 text-green-800' 
+                              : new Date(task.dueDate) < new Date() 
+                                ? 'bg-red-100 text-red-800' 
+                                : 'bg-yellow-100 text-yellow-800'
+                          }`}>
+                            {task.status === 'completed' 
+                              ? 'Completada' 
+                              : new Date(task.dueDate) < new Date() 
+                                ? 'Atrasada' 
+                                : 'Pendiente'
+                            }
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
                 {/* Próximos eventos */}
-                <div className="bg-white rounded-lg shadow p-6 mt-6">
-                  <h2 className="text-xl font-semibold mb-4 flex items-center">
-                    <Calendar className="h-5 w-5 text-blue-500 mr-2" />
+                <div className="bg-white rounded-lg shadow p-6">
+                  <h2 className="text-lg font-semibold mb-4 flex items-center">
+                    <Calendar className="h-5 w-5 text-indigo-500 mr-2" />
                     Próximos Eventos
                   </h2>
                   
                   <div className="space-y-3">
                     {upcomingEvents.map(event => (
-                      <div key={event.id} className="border border-gray-200 rounded-lg p-4">
-                        <div className="flex justify-between items-center">
-                          <div>
-                            <h3 className="font-medium text-gray-900">{event.title}</h3>
-                            <p className="text-sm text-gray-600 capitalize">{event.type}</p>
-                            <p className="text-xs text-gray-500 mt-1">
-                              {new Date(event.date).toLocaleDateString('es-ES', {
-                                weekday: 'long',
-                                month: 'long',
-                                day: 'numeric'
-                              })}
-                            </p>
-                          </div>
-                          <div className={`px-3 py-1 rounded-full text-xs font-medium ${
+                      <div key={event.id} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
+                        <div>
+                          <h3 className="font-medium text-gray-900">{event.title}</h3>
+                          <p className="text-sm text-gray-600">
+                            {new Date(event.date).toLocaleDateString('es-ES', { 
+                              weekday: 'long', 
+                              year: 'numeric', 
+                              month: 'long', 
+                              day: 'numeric' 
+                            })}
+                          </p>
+                        </div>
+                        <div>
+                          <div className={`inline-block px-2 py-1 rounded-full text-xs ${
                             event.type === 'exam' 
                               ? 'bg-red-100 text-red-800' 
                               : 'bg-blue-100 text-blue-800'
