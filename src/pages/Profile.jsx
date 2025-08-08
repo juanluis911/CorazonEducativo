@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import Header from '../components/Common/Header';
 import Sidebar from '../components/Common/Sidebar';
 import { useAuth } from '../hooks/useAuth';
-import { User, Mail, Phone, Calendar, Edit, Save, X } from 'lucide-react';
+import { User, Mail, Phone, Calendar, Edit, Save, X, Shield, BookOpen } from 'lucide-react';
 
 const Profile = () => {
   const { user } = useAuth();
@@ -13,7 +13,8 @@ const Profile = () => {
     lastName: user?.lastName || '',
     email: user?.email || '',
     phone: user?.phone || '',
-    grade: user?.grade || ''
+    grade: user?.grade || '',
+    bio: user?.bio || ''
   });
 
   const handleChange = (e) => {
@@ -23,10 +24,20 @@ const Profile = () => {
     });
   };
 
-  const handleSave = () => {
-    // Aquí iría la lógica para guardar los cambios
-    console.log('Guardando cambios:', formData);
-    setIsEditing(false);
+  const handleSave = async () => {
+    try {
+      // Aquí iría la lógica para guardar los cambios en Firebase
+      console.log('Guardando cambios:', formData);
+      
+      // Simular guardado exitoso
+      setIsEditing(false);
+      
+      // Aquí podrías mostrar una notificación de éxito
+      alert('Perfil actualizado exitosamente');
+    } catch (error) {
+      console.error('Error al guardar:', error);
+      alert('Error al actualizar el perfil');
+    }
   };
 
   const handleCancel = () => {
@@ -36,10 +47,31 @@ const Profile = () => {
       lastName: user?.lastName || '',
       email: user?.email || '',
       phone: user?.phone || '',
-      grade: user?.grade || ''
+      grade: user?.grade || '',
+      bio: user?.bio || ''
     });
     setIsEditing(false);
   };
+
+  const getRoleDisplayName = (role) => {
+    switch (role) {
+      case 'admin': return 'Administrador';
+      case 'teacher': return 'Profesor';
+      case 'student': return 'Estudiante';
+      default: return 'Usuario';
+    }
+  };
+
+  const getRoleIcon = (role) => {
+    switch (role) {
+      case 'admin': return Shield;
+      case 'teacher': return BookOpen;
+      case 'student': return User;
+      default: return User;
+    }
+  };
+
+  const RoleIcon = getRoleIcon(user?.role);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -59,7 +91,7 @@ const Profile = () => {
                   {!isEditing ? (
                     <button
                       onClick={() => setIsEditing(true)}
-                      className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
+                      className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                     >
                       <Edit className="w-4 h-4 mr-2" />
                       Editar
@@ -68,14 +100,14 @@ const Profile = () => {
                     <div className="flex space-x-2">
                       <button
                         onClick={handleSave}
-                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700"
+                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
                       >
                         <Save className="w-4 h-4 mr-2" />
                         Guardar
                       </button>
                       <button
                         onClick={handleCancel}
-                        className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                        className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                       >
                         <X className="w-4 h-4 mr-2" />
                         Cancelar
@@ -102,10 +134,12 @@ const Profile = () => {
                           : user?.email || 'Usuario'
                         }
                       </h3>
-                      <p className="text-gray-500 capitalize">
-                        {user?.role === 'admin' ? 'Administrador' : 
-                         user?.role === 'teacher' ? 'Profesor' : 'Estudiante'}
-                      </p>
+                      <div className="flex items-center justify-center mt-2">
+                        <RoleIcon className="w-4 h-4 mr-2 text-gray-500" />
+                        <p className="text-gray-500 capitalize">
+                          {getRoleDisplayName(user?.role)}
+                        </p>
+                      </div>
                     </div>
 
                     <div className="mt-6 space-y-3">
@@ -113,10 +147,10 @@ const Profile = () => {
                         <Mail className="w-5 h-5 mr-3" />
                         <span className="text-sm">{user?.email}</span>
                       </div>
-                      {user?.phone && (
+                      {formData.phone && (
                         <div className="flex items-center text-gray-600">
                           <Phone className="w-5 h-5 mr-3" />
-                          <span className="text-sm">{user.phone}</span>
+                          <span className="text-sm">{formData.phone}</span>
                         </div>
                       )}
                       <div className="flex items-center text-gray-600">
@@ -126,6 +160,42 @@ const Profile = () => {
                         </span>
                       </div>
                     </div>
+
+                    {/* Estadísticas del usuario */}
+                    {user?.role === 'student' && (
+                      <div className="mt-6 bg-gray-50 rounded-lg p-4">
+                        <h4 className="text-sm font-medium text-gray-900 mb-3">Mi Progreso</h4>
+                        <div className="space-y-2">
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-600">Tareas completadas</span>
+                            <span className="font-medium">8/10</span>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div className="bg-green-500 h-2 rounded-full" style={{ width: '80%' }}></div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {user?.role === 'teacher' && (
+                      <div className="mt-6 bg-gray-50 rounded-lg p-4">
+                        <h4 className="text-sm font-medium text-gray-900 mb-3">Mis Estadísticas</h4>
+                        <div className="space-y-3">
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-600">Estudiantes</span>
+                            <span className="font-medium">45</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-600">Tareas creadas</span>
+                            <span className="font-medium">12</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-600">Eventos programados</span>
+                            <span className="font-medium">8</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Formulario de información */}
@@ -147,7 +217,8 @@ const Profile = () => {
                                 name="firstName"
                                 value={formData.firstName}
                                 onChange={handleChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                placeholder="Tu nombre"
                               />
                             ) : (
                               <p className="text-gray-900 py-2">{formData.firstName || 'No especificado'}</p>
@@ -164,7 +235,8 @@ const Profile = () => {
                                 name="lastName"
                                 value={formData.lastName}
                                 onChange={handleChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                placeholder="Tu apellido"
                               />
                             ) : (
                               <p className="text-gray-900 py-2">{formData.lastName || 'No especificado'}</p>
@@ -175,8 +247,8 @@ const Profile = () => {
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                               Correo electrónico
                             </label>
-                            <p className="text-gray-900 py-2">{formData.email}</p>
-                            <p className="text-xs text-gray-500">
+                            <p className="text-gray-900 py-2 bg-gray-50 px-3 rounded-md">{formData.email}</p>
+                            <p className="text-xs text-gray-500 mt-1">
                               No se puede modificar el correo electrónico
                             </p>
                           </div>
@@ -191,7 +263,7 @@ const Profile = () => {
                                 name="phone"
                                 value={formData.phone}
                                 onChange={handleChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                                 placeholder="(555) 123-4567"
                               />
                             ) : (
@@ -209,22 +281,103 @@ const Profile = () => {
                                   name="grade"
                                   value={formData.grade}
                                   onChange={handleChange}
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                                 >
                                   <option value="">Seleccionar grado</option>
-                                  <option value="1ro">1ro</option>
-                                  <option value="2do">2do</option>
-                                  <option value="3ro">3ro</option>
-                                  <option value="4to">4to</option>
-                                  <option value="5to">5to</option>
-                                  <option value="6to">6to</option>
+                                  <option value="9A">9° A</option>
+                                  <option value="9B">9° B</option>
+                                  <option value="10A">10° A</option>
+                                  <option value="10B">10° B</option>
+                                  <option value="11A">11° A</option>
+                                  <option value="11B">11° B</option>
                                 </select>
                               ) : (
                                 <p className="text-gray-900 py-2">{formData.grade || 'No especificado'}</p>
                               )}
                             </div>
                           )}
+
+                          {user?.role === 'teacher' && (
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Materias que enseña
+                              </label>
+                              <p className="text-gray-900 py-2">Matemáticas, Física</p>
+                              <p className="text-xs text-gray-500 mt-1">
+                                Para modificar las materias, contacta al administrador
+                              </p>
+                            </div>
+                          )}
                         </div>
+                      </div>
+
+                      {/* Biografía */}
+                      <div>
+                        <h4 className="text-lg font-medium text-gray-900 mb-4">
+                          Acerca de mí
+                        </h4>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Biografía
+                          </label>
+                          {isEditing ? (
+                            <textarea
+                              name="bio"
+                              value={formData.bio}
+                              onChange={handleChange}
+                              rows={4}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                              placeholder="Cuéntanos un poco sobre ti..."
+                            />
+                          ) : (
+                            <p className="text-gray-900 py-2 min-h-20">
+                              {formData.bio || 'No has agregado información sobre ti.'}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Configuraciones de cuenta */}
+                      <div>
+                        <h4 className="text-lg font-medium text-gray-900 mb-4">
+                          Configuración de Cuenta
+                        </h4>
+                        
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                            <div>
+                              <h5 className="text-sm font-medium text-gray-900">Notificaciones por email</h5>
+                              <p className="text-xs text-gray-600">Recibir notificaciones importantes por correo</p>
+                            </div>
+                            <label className="relative inline-flex items-center cursor-pointer">
+                              <input type="checkbox" className="sr-only peer" defaultChecked />
+                              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                            </label>
+                          </div>
+
+                          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                            <div>
+                              <h5 className="text-sm font-medium text-gray-900">Recordatorios de tareas</h5>
+                              <p className="text-xs text-gray-600">Recordatorios automáticos antes de las fechas límite</p>
+                            </div>
+                            <label className="relative inline-flex items-center cursor-pointer">
+                              <input type="checkbox" className="sr-only peer" defaultChecked />
+                              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Cambiar contraseña */}
+                      <div>
+                        <h4 className="text-lg font-medium text-gray-900 mb-4">
+                          Seguridad
+                        </h4>
+                        
+                        <button className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                          Cambiar contraseña
+                        </button>
                       </div>
                     </div>
                   </div>

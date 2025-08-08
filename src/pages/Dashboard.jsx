@@ -1,77 +1,36 @@
-// src/pages/Dashboard.jsx
+// src/pages/Dashboard.jsx - Dashboard principal que detecta el rol
 import React from 'react';
 import { useAuth } from '../hooks/useAuth';
-import Header from '../components/Common/Header';
-import Sidebar from '../components/Common/Sidebar';
-import Calendar from '../components/Calendar/Calendar';
-import TaskList from '../components/TaskList/TaskList';
-import NotificationList from '../components/Notifications/NotificationList';
-import AnnouncementList from '../components/Announcements/AnnouncementList';
+import StudentDashboard from './StudentDashboard';
+import TeacherDashboard from './TeacherDashboard';
+import AdminDashboard from './AdminDashboard';
 
 const Dashboard = () => {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <Header />
-      
-      <div className="flex">
-        <Sidebar />
-        
-        <main className="flex-1 p-6">
-          <div className="max-w-7xl mx-auto">
-            {/* Bienvenida */}
-            <div className="mb-8">
-              <h1 className="text-2xl font-bold text-gray-900">
-                ¡Bienvenido, {user?.firstName || user?.displayName || 'Usuario'}!
-              </h1>
-              <p className="text-gray-600">
-                {new Date().toLocaleDateString('es-ES', { 
-                  weekday: 'long', 
-                  year: 'numeric', 
-                  month: 'long', 
-                  day: 'numeric' 
-                })}
-              </p>
-            </div>
-
-            {/* Grid de contenido */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Columna principal */}
-              <div className="lg:col-span-2 space-y-6">
-                {/* Calendario */}
-                <div className="bg-white rounded-lg shadow p-6">
-                  <h2 className="text-lg font-semibold mb-4">Calendario</h2>
-                  <Calendar />
-                </div>
-
-                {/* Tareas */}
-                <div className="bg-white rounded-lg shadow p-6">
-                  <h2 className="text-lg font-semibold mb-4">Mis Tareas</h2>
-                  <TaskList />
-                </div>
-              </div>
-
-              {/* Sidebar derecho */}
-              <div className="space-y-6">
-                {/* Notificaciones */}
-                <div className="bg-white rounded-lg shadow p-6">
-                  <h2 className="text-lg font-semibold mb-4">Notificaciones</h2>
-                  <NotificationList />
-                </div>
-
-                {/* Anuncios */}
-                <div className="bg-white rounded-lg shadow p-6">
-                  <h2 className="text-lg font-semibold mb-4">Anuncios</h2>
-                  <AnnouncementList />
-                </div>
-              </div>
-            </div>
-          </div>
-        </main>
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-indigo-500 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Cargando dashboard...</p>
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
+
+  // Detectar rol del usuario y renderizar el dashboard apropiado
+  switch (user?.role) {
+    case 'teacher':
+      return <TeacherDashboard />;
+    
+    case 'admin':
+      return <AdminDashboard />;
+    
+    case 'student':
+    default:
+      return <StudentDashboard />;
+  }
 };
 
 export default Dashboard;

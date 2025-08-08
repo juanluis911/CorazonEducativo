@@ -5,7 +5,15 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 
 // Páginas
 import Dashboard from './pages/Dashboard';
+import Login from './pages/Login';
+import Register from './pages/Register';
+import Tasks from './pages/Tasks';
+import Calendar from './pages/Calendar';
 import AdminPanel from './pages/AdminPanel';
+import Profile from './pages/Profile';
+
+// Importar estilos globales si existen
+import './styles/globals.css';
 import Profile from './pages/Profile';
 
 // Importar estilos globales si existen
@@ -24,12 +32,29 @@ const ProtectedRoute = ({ children, adminOnly = false }) => {
   }
 
   if (!user) {
-    // Por ahora, permite acceso sin autenticación para desarrollo
-    // En producción, esto debería redirigir a login
-    // return <Navigate to="/login" replace />;
+    return <Navigate to="/login" replace />;
   }
 
   if (adminOnly && user?.role !== 'admin') {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return children;
+};
+
+// Componente para rutas públicas (solo sin autenticación)
+const PublicRoute = ({ children }) => {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-indigo-500"></div>
+      </div>
+    );
+  }
+
+  if (user) {
     return <Navigate to="/dashboard" replace />;
   }
 
@@ -40,12 +65,49 @@ const ProtectedRoute = ({ children, adminOnly = false }) => {
 const AppRoutes = () => {
   return (
     <Routes>
+      {/* Rutas públicas */}
+      <Route 
+        path="/login" 
+        element={
+          <PublicRoute>
+            <Login />
+          </PublicRoute>
+        } 
+      />
+      
+      <Route 
+        path="/register" 
+        element={
+          <PublicRoute>
+            <Register />
+          </PublicRoute>
+        } 
+      />
+
       {/* Rutas protegidas */}
       <Route 
         path="/dashboard" 
         element={
           <ProtectedRoute>
             <Dashboard />
+          </ProtectedRoute>
+        } 
+      />
+      
+      <Route 
+        path="/tasks" 
+        element={
+          <ProtectedRoute>
+            <Tasks />
+          </ProtectedRoute>
+        } 
+      />
+      
+      <Route 
+        path="/calendar" 
+        element={
+          <ProtectedRoute>
+            <Calendar />
           </ProtectedRoute>
         } 
       />

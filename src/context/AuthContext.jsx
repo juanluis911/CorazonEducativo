@@ -48,9 +48,12 @@ export const AuthProvider = ({ children }) => {
       if (userDoc.exists()) {
         return { ...user, ...userDoc.data() };
       }
+      // Si no existe el documento, devolver solo los datos de Firebase Auth
+      console.log('Documento de usuario no encontrado en Firestore');
       return user;
     } catch (error) {
       console.error('Error obteniendo datos del usuario:', error);
+      // En caso de error, devolver solo los datos de Firebase Auth
       return user;
     }
   };
@@ -95,6 +98,8 @@ export const AuthProvider = ({ children }) => {
       dispatch({ type: 'SET_LOADING', payload: true });
       dispatch({ type: 'CLEAR_ERROR' });
 
+      console.log('Iniciando registro con datos:', userData);
+
       // Crear usuario en Firebase Auth
       const result = await createUserWithEmailAndPassword(auth, email, password);
       
@@ -111,19 +116,24 @@ export const AuthProvider = ({ children }) => {
         email: result.user.email,
         firstName: userData.firstName || '',
         lastName: userData.lastName || '',
-        role: userData.role || 'student',
+        role: userData.role, // ⭐ Quité el valor por defecto
         createdAt: new Date(),
         updatedAt: new Date(),
         isActive: true
       };
+
+      console.log('Guardando datos en Firestore:', userDocData);
 
       await setDoc(doc(db, 'users', result.user.uid), userDocData);
 
       const fullUserData = { ...result.user, ...userDocData };
       dispatch({ type: 'SET_USER', payload: fullUserData });
       
+      console.log('Usuario registrado exitosamente:', fullUserData);
+      
       return { success: true, user: fullUserData };
     } catch (error) {
+      console.error('Error en registro:', error);
       dispatch({ type: 'SET_ERROR', payload: error.message });
       dispatch({ type: 'SET_LOADING', payload: false });
       return { success: false, error: error.message };

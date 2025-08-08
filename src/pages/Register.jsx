@@ -10,7 +10,7 @@ const Register = () => {
     email: '',
     password: '',
     confirmPassword: '',
-    role: 'student'
+    role: 'teacher' // Cambia el valor por defecto a teacher para probar
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -28,6 +28,10 @@ const Register = () => {
     e.preventDefault();
     setLoading(true);
     setError('');
+
+    // DEBUG: Verificar qué datos se están enviando
+    console.log('Datos del formulario:', formData);
+    console.log('Rol seleccionado:', formData.role);
 
     // Validaciones
     if (formData.password !== formData.confirmPassword) {
@@ -49,13 +53,23 @@ const Register = () => {
     }
 
     try {
-      await register(formData.email, formData.password, {
+      const userData = {
         firstName: formData.firstName,
         lastName: formData.lastName,
         role: formData.role
-      });
+      };
+      
+      // DEBUG: Verificar datos que se envían al registro
+      console.log('userData enviado:', userData);
+      
+      const result = await register(formData.email, formData.password, userData);
+      
+      // DEBUG: Verificar resultado del registro
+      console.log('Resultado del registro:', result);
+      
       navigate('/dashboard');
     } catch (error) {
+      console.error('Error en registro:', error);
       setError(getErrorMessage(error.code));
     } finally {
       setLoading(false);
@@ -147,8 +161,12 @@ const Register = () => {
             >
               <option value="student">Estudiante</option>
               <option value="teacher">Profesor</option>
-              <option value="parent">Padre/Madre</option>
+              <option value="admin">Administrador</option>
             </select>
+            {/* DEBUG: Mostrar valor actual */}
+            <p className="text-xs text-gray-500 mt-1">
+              Rol actual: {formData.role}
+            </p>
           </div>
 
           <div>
