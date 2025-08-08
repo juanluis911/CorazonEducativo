@@ -14,7 +14,7 @@ import {
   Trash2,
   ChevronRight
 } from 'lucide-react';
-
+/*
 import MobileLayout, { 
   MobileCard, 
   MobileButton, 
@@ -23,7 +23,7 @@ import MobileLayout, {
   SwipeableCard,
   BottomSheet
 } from '../components/Common/MobileLayout';
-
+*/
 import { MobileTaskItem } from '../components/TaskList/MobileTaskItem';
 import { MobileCalendar } from '../components/Calendar/MobileCalendar';
 import { 
@@ -284,6 +284,7 @@ const MobileDashboard = () => {
 
   if (loading) {
     return (
+      /*
       <MobileLayout title="Dashboard">
         <div className="flex items-center justify-center py-20">
           <div className="text-center">
@@ -292,16 +293,17 @@ const MobileDashboard = () => {
           </div>
         </div>
       </MobileLayout>
+      */
     );
   }
 
   return (
+    
     <MobileLayout title="Dashboard" showNotifications={true}>
       <div 
         className="space-y-6 pb-20"
         {...pullToRefreshProps}
       >
-        {/* Indicador de Pull to Refresh */}
         {(isPulling || refreshing) && (
           <div 
             className="flex justify-center py-4 transition-all duration-200"

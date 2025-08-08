@@ -19,19 +19,6 @@ const Sidebar = ({ isOpen = true, onClose }) => {
   const location = useLocation();
   const { user } = useAuth();
 
-  // Cerrar sidebar cuando cambie la ruta en móvil
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth >= 1024 && onClose) {
-        // En desktop, no cerrar automáticamente
-        return;
-      }
-    };
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [onClose]);
-
   // Cerrar sidebar al hacer clic en overlay
   const handleOverlayClick = (e) => {
     if (e.target === e.currentTarget && onClose) {
@@ -120,26 +107,28 @@ const Sidebar = ({ isOpen = true, onClose }) => {
     return location.pathname === href;
   };
 
-  if (!isOpen) {
-    return null;
-  }
+  // Determinar si estamos en móvil
+  const isMobile = window.innerWidth < 1024;
 
   return (
     <>
-      {/* Overlay para móvil */}
-      <div 
-        className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
-        onClick={handleOverlayClick}
-        aria-hidden="true"
-      />
+      {/* Overlay para móvil - solo se muestra si está abierto en móvil */}
+      {isMobile && isOpen && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-40"
+          onClick={handleOverlayClick}
+          aria-hidden="true"
+        />
+      )}
       
       {/* Sidebar */}
       <div className={`
-        fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-gray-800 
-        transform transition-transform duration-300 ease-in-out
+        ${isMobile ? 'fixed' : 'sticky top-0'} inset-y-0 left-0 z-50 w-64 bg-white dark:bg-gray-800 
         border-r border-gray-200 dark:border-gray-700
-        lg:translate-x-0 lg:static lg:inset-0
-        ${isOpen ? 'translate-x-0' : '-translate-x-full'}
+        ${isMobile ? 
+          `transform transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : '-translate-x-full'}` 
+          : 'h-screen'
+        }
       `}>
         {/* Header del sidebar */}
         <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200 dark:border-gray-700">
@@ -147,14 +136,16 @@ const Sidebar = ({ isOpen = true, onClose }) => {
             Agenda Escolar
           </h2>
           
-          {/* Botón cerrar en móvil */}
-          <button
-            onClick={onClose}
-            className="lg:hidden p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-            aria-label="Cerrar menú"
-          >
-            <X className="w-6 h-6" />
-          </button>
+          {/* Botón cerrar - solo en móvil */}
+          {isMobile && (
+            <button
+              onClick={onClose}
+              className="p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              aria-label="Cerrar menú"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          )}
         </div>
 
         {/* Información del usuario */}
