@@ -1,9 +1,17 @@
-// src/pages/Calendar.jsx - Versión actualizada con edición de eventos
+// src/pages/Calendar.jsx - Con persistencia en Firebase
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import Header from '../components/Common/Header';
 import Sidebar from '../components/Common/Sidebar';
-import CreateEventForm from '../components/Calendar/CreateEventForm'; // NUEVA IMPORTACIÓN
+import CreateEventForm from '../components/Calendar/CreateEventForm';
+import { 
+  getEvents, 
+  createEvent, 
+  updateEvent, 
+  deleteEvent,
+  canEditEvent,
+  canDeleteEvent
+} from '../services/eventService';
 import { 
   Calendar as CalendarIcon, 
   Plus, 
@@ -14,7 +22,9 @@ import {
   Users, 
   X,
   Edit,
-  Trash2
+  Trash2,
+  RefreshCw,
+  AlertCircle
 } from 'lucide-react';
 
 const Calendar = () => {
@@ -24,42 +34,45 @@ const Calendar = () => {
   const [events, setEvents] = useState([]);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [showEventModal, setShowEventModal] = useState(false);
-  const [editingEvent, setEditingEvent] = useState(null); // NUEVO ESTADO
+  const [editingEvent, setEditingEvent] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
 
-  // Mock events data
+  // Cargar eventos al montar el componente
   useEffect(() => {
-    const mockEvents = [
-      {
-        id: 1,
-        title: 'Examen de Matemáticas',
-        description: 'Examen del primer parcial',
-        type: 'exam',
-        date: new Date('2025-08-15'),
-        startTime: '09:00',
-        endTime: '11:00',
-        location: 'Aula 205',
-        subject: 'Matemáticas',
-        createdBy: 'Prof. García',
-        isPublic: true,
-        color: '#EF4444'
-      },
-      {
-        id: 2,
-        title: 'Presentación Historia',
-        description: 'Presentación sobre la Revolución Industrial',
-        type: 'presentation',
-        date: new Date('2025-08-18'),
-        startTime: '14:30',
-        endTime: '15:30',
-        location: 'Aula 301',
-        subject: 'Historia',
-        createdBy: 'Prof. Martínez',
-        isPublic: true,
-        color: '#3B82F6'
-      }
-    ];
-    setEvents(mockEvents);
+    loadEvents();
   }, []);
+
+  // Función para cargar eventos desde Firebase
+  const loadEvents = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const eventsData = await getEvents();
+      setEvents(eventsData);
+    } catch (error) {
+      console.error('Error cargando eventos:', error);
+      setError('No se pudieron cargar los eventos. Intenta nuevamente.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Función para refrescar eventos
+  const refreshEvents = async () => {
+    try {
+      setRefreshing(true);
+      setError(null);
+      const eventsData = await getEvents();
+      setEvents(eventsData);
+    } catch (error) {
+      console.error('Error refrescando eventos:', error);
+      setError('No se pudieron actualizar los eventos.');
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   // Navigation functions
   const previousMonth = () => {
@@ -93,7 +106,8 @@ const Calendar = () => {
     meeting: 'bg-purple-100 text-purple-800',
     deadline: 'bg-orange-100 text-orange-800',
     holiday: 'bg-green-100 text-green-800',
-    class: 'bg-indigo-100 text-indigo-800'
+    class: 'bg-indigo-100 text-indigo-800',
+    assignment: 'bg-yellow-100 text-yellow-800'
   };
 
   // Get events for specific date
@@ -104,32 +118,65 @@ const Calendar = () => {
     });
   };
 
-  // NUEVA FUNCIÓN: Manejar creación de eventos
-  const handleEventCreated = (eventData) => {
-    if (editingEvent) {
-      // Actualizar evento existente
-      setEvents(prev => prev.map(e => 
-        e.id === editingEvent.id ? { ...eventData, id: editingEvent.id } : e
-      ));
-      setEditingEvent(null);
-    } else {
-      // Crear nuevo evento
-      setEvents(prev => [...prev, { ...eventData, id: Date.now() + Math.random() }]);
+  // Manejar creación/edición de eventos
+  const handleEventCreated = async (eventData) => {
+    try {
+      setError(null);
+      
+      if (editingEvent) {
+        // Actualizar evento existente
+        const updatedEvent = await updateEvent(editingEvent.id, eventData);
+        setEvents(prev => prev.map(e => 
+          e.id === editingEvent.id ? { ...updatedEvent, id: editingEvent.id } : e
+        ));
+        setEditingEvent(null);
+      } else {
+        // Crear nuevo evento
+        const newEvent = await createEvent(eventData, user?.email);
+        setEvents(prev => [...prev, newEvent]);
+      }
+      
+      setShowEventModal(false);
+    } catch (error) {
+      console.error('Error guardando evento:', error);
+      setError(error.message || 'Error al guardar el evento');
     }
-    setShowEventModal(false);
   };
 
-  // NUEVA FUNCIÓN: Iniciar edición de evento
+  // Iniciar edición de evento
   const handleEditEvent = (event) => {
+    // Verificar permisos
+    if (!canEditEvent(event, user?.email, user?.role)) {
+      setError('No tienes permisos para editar este evento');
+      return;
+    }
+    
     setEditingEvent(event);
     setSelectedEvent(null);
     setShowEventModal(true);
   };
 
-  // NUEVA FUNCIÓN: Eliminar evento
-  const handleDeleteEvent = (eventId) => {
-    setEvents(prev => prev.filter(e => e.id !== eventId));
-    setSelectedEvent(null);
+  // Eliminar evento
+  const handleDeleteEvent = async (eventId) => {
+    const eventToDelete = events.find(e => e.id === eventId);
+    
+    // Verificar permisos
+    if (!canDeleteEvent(eventToDelete, user?.email, user?.role)) {
+      setError('No tienes permisos para eliminar este evento');
+      return;
+    }
+
+    if (window.confirm('¿Estás seguro de que quieres eliminar este evento?')) {
+      try {
+        setError(null);
+        await deleteEvent(eventId);
+        setEvents(prev => prev.filter(e => e.id !== eventId));
+        setSelectedEvent(null);
+      } catch (error) {
+        console.error('Error eliminando evento:', error);
+        setError(error.message || 'Error al eliminar el evento');
+      }
+    }
   };
 
   // Render calendar days
@@ -156,7 +203,7 @@ const Calendar = () => {
           className={`p-2 h-24 border border-gray-200 ${
             date.getMonth() !== currentDate.getMonth() 
               ? 'bg-gray-50 text-gray-400' : 'bg-white'
-          } ${isToday ? 'bg-blue-50' : ''} hover:bg-gray-50 cursor-pointer`}
+          } ${isToday ? 'bg-blue-50' : ''} hover:bg-gray-50 cursor-pointer transition-colors`}
           onClick={() => setSelectedDate(date)}
         >
           <div className={`text-sm font-medium mb-2 ${
@@ -173,7 +220,7 @@ const Calendar = () => {
                   e.stopPropagation();
                   setSelectedEvent(event);
                 }}
-                className={`text-xs p-1 rounded border cursor-pointer hover:opacity-80 ${
+                className={`text-xs p-1 rounded border cursor-pointer hover:opacity-80 transition-opacity ${
                   eventTypeStyles[event.type] || 'bg-gray-100 text-gray-800'
                 }`}
               >
@@ -194,6 +241,25 @@ const Calendar = () => {
     return days;
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <div className="flex">
+          <Sidebar />
+          <main className="flex-1 p-6">
+            <div className="flex items-center justify-center h-64">
+              <div className="text-center">
+                <RefreshCw className="h-8 w-8 animate-spin text-indigo-600 mx-auto mb-4" />
+                <p className="text-gray-600">Cargando calendario...</p>
+              </div>
+            </div>
+          </main>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
@@ -203,6 +269,22 @@ const Calendar = () => {
         
         <main className="flex-1 p-6">
           <div className="max-w-7xl mx-auto">
+            {/* Error Alert */}
+            {error && (
+              <div className="mb-6 bg-red-50 border border-red-200 rounded-md p-4 flex items-center">
+                <AlertCircle className="h-5 w-5 text-red-500 mr-3 flex-shrink-0" />
+                <div className="flex-1">
+                  <p className="text-red-700">{error}</p>
+                </div>
+                <button
+                  onClick={() => setError(null)}
+                  className="text-red-400 hover:text-red-600"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            )}
+
             {/* Header del calendario */}
             <div className="flex justify-between items-center mb-6">
               <div>
@@ -213,16 +295,25 @@ const Calendar = () => {
               </div>
               
               <div className="flex items-center space-x-4">
+                <button
+                  onClick={refreshEvents}
+                  disabled={refreshing}
+                  className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors disabled:opacity-50"
+                  title="Actualizar eventos"
+                >
+                  <RefreshCw className={`h-5 w-5 ${refreshing ? 'animate-spin' : ''}`} />
+                </button>
+                
                 <div className="flex items-center space-x-2">
                   <button
                     onClick={previousMonth}
-                    className="p-2 hover:bg-gray-100 rounded-md"
+                    className="p-2 hover:bg-gray-100 rounded-md transition-colors"
                   >
                     <ChevronLeft className="h-5 w-5" />
                   </button>
                   <button
                     onClick={nextMonth}
-                    className="p-2 hover:bg-gray-100 rounded-md"
+                    className="p-2 hover:bg-gray-100 rounded-md transition-colors"
                   >
                     <ChevronRight className="h-5 w-5" />
                   </button>
@@ -231,10 +322,10 @@ const Calendar = () => {
                 {user?.role === 'teacher' && (
                   <button
                     onClick={() => {
-                      setEditingEvent(null); // Asegurar que no estamos editando
+                      setEditingEvent(null);
                       setShowEventModal(true);
                     }}
-                    className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 flex items-center"
+                    className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 flex items-center transition-colors"
                   >
                     <Plus className="h-4 w-4 mr-2" />
                     Nuevo Evento
@@ -271,7 +362,7 @@ const Calendar = () => {
                   .map((event) => (
                     <div 
                       key={event.id} 
-                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer"
+                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer transition-colors"
                       onClick={() => setSelectedEvent(event)}
                     >
                       <div className="flex items-center space-x-3">
@@ -297,10 +388,14 @@ const Calendar = () => {
                          event.type === 'presentation' ? 'Presentación' :
                          event.type === 'meeting' ? 'Reunión' :
                          event.type === 'deadline' ? 'Entrega' :
-                         event.type === 'holiday' ? 'Feriado' : 'Evento'}
+                         event.type === 'holiday' ? 'Feriado' :
+                         event.type === 'assignment' ? 'Tarea' : 'Evento'}
                       </span>
                     </div>
                   ))}
+                {events.filter(event => new Date(event.date) >= new Date()).length === 0 && (
+                  <p className="text-gray-500 text-center py-4">No hay eventos próximos</p>
+                )}
               </div>
             </div>
           </div>
@@ -311,33 +406,36 @@ const Calendar = () => {
       {selectedEvent && (
         <EventDetailModal 
           event={selectedEvent}
-          userRole={user?.role}
+          user={user}
           onClose={() => setSelectedEvent(null)}
-          onEdit={() => handleEditEvent(selectedEvent)} {/* FUNCIÓN ACTUALIZADA */}
-          onDelete={handleDeleteEvent} {/* FUNCIÓN ACTUALIZADA */}
+          onEdit={() => handleEditEvent(selectedEvent)}
+          onDelete={handleDeleteEvent}
         />
       )}
 
-      {/* Modal de crear/editar evento - REEMPLAZADO */}
+      {/* Modal de crear/editar evento */}
       {showEventModal && user?.role === 'teacher' && (
         <CreateEventForm 
-          existingEvent={editingEvent} {/* PASAR EVENTO PARA EDITAR */}
+          existingEvent={editingEvent}
           onClose={() => {
             setShowEventModal(false);
-            setEditingEvent(null); // LIMPIAR ESTADO DE EDICIÓN
+            setEditingEvent(null);
           }}
-          onEventCreated={handleEventCreated} {/* FUNCIÓN ACTUALIZADA */}
+          onEventCreated={handleEventCreated}
         />
       )}
     </div>
   );
 };
 
-// Modal de detalles del evento - ACTUALIZADO
-const EventDetailModal = ({ event, userRole, onClose, onEdit, onDelete }) => {
+// Modal de detalles del evento
+const EventDetailModal = ({ event, user, onClose, onEdit, onDelete }) => {
+  const canEdit = canEditEvent(event, user?.email, user?.role);
+  const canDelete = canDeleteEvent(event, user?.email, user?.role);
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md">
+      <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold">{event.title}</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
@@ -346,9 +444,11 @@ const EventDetailModal = ({ event, userRole, onClose, onEdit, onDelete }) => {
         </div>
         
         <div className="space-y-4">
-          <div>
-            <p className="text-gray-600">{event.description}</p>
-          </div>
+          {event.description && (
+            <div>
+              <p className="text-gray-600">{event.description}</p>
+            </div>
+          )}
           
           <div className="flex items-center text-sm text-gray-600">
             <CalendarIcon className="h-4 w-4 mr-2" />
@@ -389,33 +489,39 @@ const EventDetailModal = ({ event, userRole, onClose, onEdit, onDelete }) => {
             event.type === 'presentation' ? 'bg-blue-100 text-blue-800' :
             event.type === 'meeting' ? 'bg-purple-100 text-purple-800' :
             event.type === 'deadline' ? 'bg-orange-100 text-orange-800' :
-            event.type === 'holiday' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+            event.type === 'holiday' ? 'bg-green-100 text-green-800' :
+            event.type === 'assignment' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'
           }`}>
             {event.type === 'exam' ? 'Examen' :
              event.type === 'presentation' ? 'Presentación' :
              event.type === 'meeting' ? 'Reunión' :
              event.type === 'deadline' ? 'Fecha límite' :
-             event.type === 'holiday' ? 'Feriado' : 'Evento'}
+             event.type === 'holiday' ? 'Feriado' :
+             event.type === 'assignment' ? 'Tarea' : 'Evento'}
           </div>
         </div>
         
-        {/* BOTONES ACTUALIZADOS - Solo mostrar si es profesor */}
-        {userRole === 'teacher' && (
+        {/* Botones de acción */}
+        {(canEdit || canDelete) && (
           <div className="flex gap-2 mt-6">
-            <button 
-              onClick={onEdit} {/* USAR LA FUNCIÓN PASADA COMO PROP */}
-              className="flex-1 bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 flex items-center justify-center"
-            >
-              <Edit className="h-4 w-4 mr-2" />
-              Editar
-            </button>
-            <button 
-              onClick={() => onDelete(event.id)} {/* USAR LA FUNCIÓN PASADA COMO PROP */}
-              className="flex-1 bg-red-600 text-white py-2 px-4 rounded hover:bg-red-700 flex items-center justify-center"
-            >
-              <Trash2 className="h-4 w-4 mr-2" />
-              Eliminar
-            </button>
+            {canEdit && (
+              <button 
+                onClick={onEdit}
+                className="flex-1 bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 flex items-center justify-center transition-colors"
+              >
+                <Edit className="h-4 w-4 mr-2" />
+                Editar
+              </button>
+            )}
+            {canDelete && (
+              <button 
+                onClick={() => onDelete(event.id)}
+                className="flex-1 bg-red-600 text-white py-2 px-4 rounded hover:bg-red-700 flex items-center justify-center transition-colors"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Eliminar
+              </button>
+            )}
           </div>
         )}
       </div>

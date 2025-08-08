@@ -17,7 +17,24 @@ const CreateEventForm = ({ onClose, onEventCreated, existingEvent = null }) => {
   const { user } = useAuth();
   const isEditing = !!existingEvent;
 
-  // Estado del formulario
+  // Tipos de eventos disponibles - MOVIDO ANTES DEL ESTADO
+  const eventTypes = [
+    { value: 'exam', label: 'Examen', icon: '📝', color: '#EF4444' },
+    { value: 'assignment', label: 'Entrega de Tarea', icon: '📋', color: '#F59E0B' },
+    { value: 'class', label: 'Clase', icon: '📚', color: '#3B82F6' },
+    { value: 'meeting', label: 'Reunión', icon: '👥', color: '#8B5CF6' },
+    { value: 'holiday', label: 'Feriado', icon: '🎉', color: '#10B981' },
+    { value: 'presentation', label: 'Presentación', icon: '🎤', color: '#06B6D4' },
+    { value: 'deadline', label: 'Fecha Límite', icon: '⏰', color: '#F97316' }
+  ];
+
+  // Función para obtener color por defecto según el tipo
+  function getDefaultColorForType(type) {
+    const eventType = eventTypes.find(et => et.value === type);
+    return eventType ? eventType.color : '#3B82F6';
+  }
+
+  // Estado del formulario - MOVIDO DESPUÉS DE LAS DECLARACIONES
   const [formData, setFormData] = useState({
     title: existingEvent?.title || '',
     description: existingEvent?.description || '',
@@ -35,17 +52,6 @@ const CreateEventForm = ({ onClose, onEventCreated, existingEvent = null }) => {
 
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
-
-  // Tipos de eventos disponibles
-  const eventTypes = [
-    { value: 'exam', label: 'Examen', icon: '📝', color: '#EF4444' },
-    { value: 'assignment', label: 'Entrega de Tarea', icon: '📋', color: '#F59E0B' },
-    { value: 'class', label: 'Clase', icon: '📚', color: '#3B82F6' },
-    { value: 'meeting', label: 'Reunión', icon: '👥', color: '#8B5CF6' },
-    { value: 'holiday', label: 'Feriado', icon: '🎉', color: '#10B981' },
-    { value: 'presentation', label: 'Presentación', icon: '🎤', color: '#06B6D4' },
-    { value: 'deadline', label: 'Fecha Límite', icon: '⏰', color: '#F97316' }
-  ];
 
   // Materias disponibles
   const subjects = [
